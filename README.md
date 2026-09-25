@@ -15,7 +15,7 @@ at risk.
 
 | From one prompt to a working project | Live iteration on a running app | Improving existing code |
 |---|---|---|
-| ![Scaffolding a project from scratch](docs/demo-scaffold.gif) | ![Iterating live on a canvas app](docs/demo-live-fix.gif) | ![Improving existing code](docs/demo-improve.gif) |
+| ![Scaffolding a project from scratch](docs/3%20creating%20a%20project.gif) | ![Iterating live on a canvas app](docs/1%20make%20the%20code.gif) | ![Improving existing code](docs/2%20improve%20the%20code.gif) |
 
 ## Why SovNode
 
