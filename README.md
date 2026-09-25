@@ -11,11 +11,11 @@ at risk.
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
-
 ## See it in action
-| From one prompt to a working project | Live iteration on a running app |
-|---|---|
-| ![Scaffolding a project from scratch](docs/3 creating a project.gif) | ![Iterating live on a canvas app](docs/1 make the code.gif) |
+
+| From one prompt to a working project | Live iteration on a running app | Improving existing code |
+|---|---|---|
+| ![Scaffolding a project from scratch](docs/demo-scaffold.gif) | ![Iterating live on a canvas app](docs/demo-live-fix.gif) | ![Improving existing code](docs/demo-improve.gif) |
 
 ## Why SovNode
 
