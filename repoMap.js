@@ -340,12 +340,14 @@ async function readGoModule() {
   }
 }
 
+const SUPPORTED_EXTS = new Set(LANG_PATTERNS.flatMap(([exts]) => exts));
+
 async function listSourceFiles() {
   // vscode.workspace.findFiles already respects .gitignore-style excludes
   // when files.exclude/search.exclude are set, but we double up with our
   // own directory blocklist since a fresh repo may not have those configured.
   const exclude = `**/{${Array.from(IGNORE_DIRS).map((d) => d + "/**").join(",")}}`;
-  const supportedExts = new Set(LANG_PATTERNS.flatMap(([exts]) => exts));
+  const supportedExts = SUPPORTED_EXTS;
   // Se piden SOLO extensiones de codigo: antes se pedian "**/*" con tope y se
   // filtraba despues, y en proyectos con muchas imagenes/assets el tope se
   // llenaba de archivos que no son codigo y el mapa quedaba casi vacio.
@@ -423,51 +425,89 @@ function pageRank(relPaths, edges, { personalizeFiles, damping = 0.85, maxIter =
 // (el "orden por defecto"; renderRepoMap puede recalcularlo personalizado
 // sin volver a leer nada, reusando `graph`). Returns null if the workspace
 // has no folder open (nothing to map) or nothing supported was found.
+// Cache de parseo por archivo (ruta absoluta -> {mtime, size, parsed}). Un
+// cambio en un archivo invalida el mapa entero (hay que recalcular el grafo y
+// el PageRank, que dependen de todos), pero releer y reparsear con
+// tree-sitter los cientos de archivos que NO cambiaron era lo caro: ahora solo
+// se reparsea lo que tiene otra fecha de modificacion o tamanio. Las entradas
+// de archivos que ya no estan en el proyecto se descartan en cada build.
+const parseCache = new Map();
+
+// Lee y parsea un archivo, o devuelve lo cacheado si no cambio. null = saltear.
+async function parseFileCached(uri) {
+  let stat;
+  try {
+    stat = await vscode.workspace.fs.stat(uri);
+  } catch {
+    return null;
+  }
+  if (stat.size > MAX_FILE_BYTES) return null;
+  const hit = parseCache.get(uri.fsPath);
+  if (hit && hit.mtime === stat.mtime && hit.size === stat.size) return hit.parsed;
+  let text;
+  try {
+    text = Buffer.from(await vscode.workspace.fs.readFile(uri)).toString("utf8");
+  } catch {
+    return null;
+  }
+  const ext = extOf(uri.fsPath);
+  // Tree-sitter primero (parseo real); si no esta disponible para esta
+  // extension (dependencia no instalada, gramatica faltante, extension
+  // sin soporte) cae al extractor por regex de siempre. Nunca se mezclan
+  // a medias en un mismo archivo: o se pudo parsear entero, o se usa el
+  // regex entero -- asi no hay simbolos "reales" y "adivinados" sueltos
+  // juntos sin que se sepa cual es cual.
+  const ts = await treesitter.parseWithTreeSitter(text, ext);
+  const parsed = ts
+    ? { text, symbols: ts.symbols, importSpecs: ts.imports, usedTreeSitter: true }
+    : { text, symbols: extractSymbolsRegex(text, ext), importSpecs: importSpecifiersRegex(text, ext), usedTreeSitter: false };
+  parseCache.set(uri.fsPath, { mtime: stat.mtime, size: stat.size, parsed });
+  return parsed;
+}
+
+// Si un cambio en `fsPath` (evento del watcher) puede cambiar el mapa: se
+// ignoran las carpetas que el mapa nunca lee (.git, node_modules, build...) y
+// los archivos que no son codigo. Un borrado sin extension puede ser una
+// carpeta entera, asi que ese caso si cuenta.
+function affectsRepoMap(fsPath, kind) {
+  const segs = String(fsPath).split(/[\\/]/);
+  if (segs.some((s) => IGNORE_DIRS.has(s))) return false;
+  if (kind === "delete") return true;
+  const base = segs[segs.length - 1];
+  if (base === "go.mod") return true;
+  const ext = extOf(base);
+  return !ext || SUPPORTED_EXTS.has(ext);
+}
+
+// Builds the map: reads every matched file once, extracts symbols e
+// imports, arma el grafo archivo-a-archivo, y calcula un PageRank uniforme
+// (el "orden por defecto"; renderRepoMap puede recalcularlo personalizado
+// sin volver a leer nada, reusando `graph`). Returns null if the workspace
+// has no folder open (nothing to map) or nothing supported was found.
 async function buildRepoMap() {
   const files = await listSourceFiles();
-  if (!files.length) return null;
+  if (!files.length) {
+    parseCache.clear();
+    return null;
+  }
 
   const entries = []; // {relPath, ext, symbols, importSpecs, usedTreeSitter, text}
   let treeSitterUsed = 0;
   let treeSitterTotal = 0;
+  const live = new Set();
   for (const uri of files) {
-    let stat;
-    try {
-      stat = await vscode.workspace.fs.stat(uri);
-    } catch {
-      continue;
-    }
-    if (stat.size > MAX_FILE_BYTES) continue;
-    let text;
-    try {
-      text = Buffer.from(await vscode.workspace.fs.readFile(uri)).toString("utf8");
-    } catch {
-      continue;
-    }
+    live.add(uri.fsPath);
+    const parsed = await parseFileCached(uri);
+    if (!parsed) continue;
     const relPath = vscode.workspace.asRelativePath(uri);
     const ext = extOf(uri.fsPath);
-
-    // Tree-sitter primero (parseo real); si no esta disponible para esta
-    // extension (dependencia no instalada, gramatica faltante, extension
-    // sin soporte) cae al extractor por regex de siempre. Nunca se mezclan
-    // a medias en un mismo archivo: o se pudo parsear entero, o se usa el
-    // regex entero -- asi no hay simbolos "reales" y "adivinados" sueltos
-    // juntos sin que se sepa cual es cual.
     if (treesitter.EXT_TO_GRAMMAR[ext]) treeSitterTotal++;
-    const parsed = await treesitter.parseWithTreeSitter(text, ext);
-    let symbols, importSpecs, usedTreeSitter;
-    if (parsed) {
-      symbols = parsed.symbols;
-      importSpecs = parsed.imports;
-      usedTreeSitter = true;
-      treeSitterUsed++;
-    } else {
-      symbols = extractSymbolsRegex(text, ext);
-      importSpecs = importSpecifiersRegex(text, ext);
-      usedTreeSitter = false;
-    }
-    entries.push({ relPath, ext, symbols, importSpecs, usedTreeSitter, text });
+    if (parsed.usedTreeSitter) treeSitterUsed++;
+    // Simbolos copiados: el build les escribe refCount y no debe tocar el cache.
+    const symbols = parsed.symbols.map((sym) => ({ ...sym }));
+    entries.push({ relPath, ext, symbols, importSpecs: parsed.importSpecs, usedTreeSitter: parsed.usedTreeSitter, text: parsed.text });
   }
+  for (const k of parseCache.keys()) if (!live.has(k)) parseCache.delete(k);
 
   const relPathSet = new Set(entries.map((e) => e.relPath));
   const edges = new Map(); // relPath -> Map(relPath -> peso)
@@ -594,4 +634,4 @@ function extractFocusNames(question, map) {
   return found;
 }
 
-module.exports = { buildRepoMap, renderRepoMap, renderFocusMap, extractFocusNames, pageRank };
+module.exports = { affectsRepoMap, buildRepoMap, renderRepoMap, renderFocusMap, extractFocusNames, pageRank };

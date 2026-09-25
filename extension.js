@@ -17,6 +17,7 @@
 //   diagnostics.js    /diag
 const vscode = require("vscode");
 const { PROVIDER_LABEL } = require("./providers");
+const { affectsRepoMap } = require("./repoMap");
 const i18n = require("./i18n");
 const { L } = i18n;
 const { state, rt, cfg, log, post } = require("./state");
@@ -65,10 +66,12 @@ function activate(context) {
   context.subscriptions.push({ dispose: () => { process.off("uncaughtException", onExc); process.off("unhandledRejection", onRej); } });
 
   const watcher = vscode.workspace.createFileSystemWatcher("**/*");
-  const invalidate = () => invalidateRepoMap();
-  watcher.onDidChange(invalidate);
-  watcher.onDidCreate(invalidate);
-  watcher.onDidDelete(invalidate);
+  // Solo lo que puede cambiar el mapa: un commit (.git/), npm install o un
+  // build ya no lo tiran abajo entero (ver affectsRepoMap en repoMap.js).
+  const invalidate = (kind) => (uri) => { if (affectsRepoMap(uri.fsPath, kind)) invalidateRepoMap(); };
+  watcher.onDidChange(invalidate("change"));
+  watcher.onDidCreate(invalidate("create"));
+  watcher.onDidDelete(invalidate("delete"));
   context.subscriptions.push(watcher);
 
   context.subscriptions.push(
