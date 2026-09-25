@@ -13,17 +13,9 @@ at risk.
 ---
 
 ## See it in action
-
-<!--
-Drop your GIFs into docs/ with these exact names and they'll show up here automatically:
-  docs/3 creating a project.gif   -> generating a full project from a single prompt
-  docs/1 make the code.gif    -> live coding / iterating on a running app
-Add more rows the same way if you record more demos.
--->
-
 | From one prompt to a working project | Live iteration on a running app |
 |---|---|
-| ![Scaffolding a project from scratch](docs/demo-scaffold.gif) | ![Iterating live on a canvas app](docs/demo-physics.gif) |
+| ![Scaffolding a project from scratch](docs/3 creating a project.gif) | ![Iterating live on a canvas app](docs/1 make the code.gif) |
 
 ## Why SovNode
 
