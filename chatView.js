@@ -7,7 +7,7 @@ const i18n = require("./i18n");
 const { L } = i18n;
 const { state, rt, cfg, log, post } = require("./state");
 const { AUTO, MODEL_CHOICES, MODEL_CHOICES_GEMINI, MODEL_CHOICES_OPENAI, MODEL_CHOICES_ANTHROPIC, editorModelChoices, keyStatus } = require("./models");
-const { activeRelPath, uriOf, contextPaths, sendFilesUpdate } = require("./workspaceFiles");
+const { activeRelPath, uriOf, contextPaths, sendFilesUpdate, addUserChatFile } = require("./workspaceFiles");
 const { logSummary, sendLogsUpdate, attachLog, attachProblems } = require("./logAttach");
 const { diagContext } = require("./sessionLog");
 const { undoLast } = require("./undo");
@@ -78,7 +78,7 @@ async function onWebviewMessage(msg) {
       return vscode.commands.executeCommand("sovnodeAider.setApiKey");
     case "addActive": {
       const rel = activeRelPath();
-      if (rel) state.chatFiles.add(rel);
+      if (rel) addUserChatFile(rel);
       return sendFilesUpdate();
     }
     case "dropFile":

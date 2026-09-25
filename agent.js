@@ -12,7 +12,7 @@ const { L } = i18n;
 const { state, cfg, workspaceRoot, post } = require("./state");
 const { missingApiKeyFor, isAuto, autoTiers, callLLM, warnIfExpensive } = require("./models");
 const { getRepoMap, repoMapParts } = require("./context");
-const { validatePath, exists, loadContextFiles, sendFilesUpdate } = require("./workspaceFiles");
+const { validatePath, exists, loadContextFiles, sendFilesUpdate, addAutoChatFile } = require("./workspaceFiles");
 const { diagContext } = require("./sessionLog");
 const { runTurnInner, parseFileRequest, MAX_FILE_REQUEST_ROUNDS } = require("./turn");
 
@@ -135,7 +135,7 @@ async function runTaskInner(objective) {
       const wanted = parseFileRequest(planRes.text);
       if (!wanted || round === MAX_FILE_REQUEST_ROUNDS) break;
       const added = [];
-      for (const w of wanted) if (!validatePath(w) && (await exists(w))) { state.chatFiles.add(path.posix.normalize(w)); added.push(w); }
+      for (const w of wanted) if (!validatePath(w) && (await exists(w))) { addAutoChatFile(path.posix.normalize(w), state.turnCounter + 1); added.push(w); }
       if (!added.length) break;
       post({ type: "info", turnId: null, taskId, text: L(`El planificador pidio ver: ${added.join(", ")} (agregados al chat)`, `The planner asked to see: ${added.join(", ")} (added to the chat)`) });
       sendFilesUpdate();

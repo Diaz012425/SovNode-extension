@@ -11,7 +11,7 @@ const { L } = require("./i18n");
 const { state, cfg, workspaceRoot, post } = require("./state");
 const { AUTO, MODEL_CHOICES, autoTiers, postConfig } = require("./models");
 const { getRepoMap } = require("./context");
-const { relPathOf, contextPaths, sendFilesUpdate } = require("./workspaceFiles");
+const { relPathOf, contextPaths, sendFilesUpdate, addUserChatFile } = require("./workspaceFiles");
 const { sendLogsUpdate, attachLog, attachProblems } = require("./logAttach");
 const { undoLast, undoTask } = require("./undo");
 const { runDiagnostics } = require("./diagnostics");
@@ -48,7 +48,7 @@ async function handleSlash(text) {
       if (!workspaceRoot()) return post({ type: "system", text: L("Abre una carpeta primero.", "Open a folder first.") });
       const found = await vscode.workspace.findFiles(arg.replace(/\\/g, "/"), "**/{node_modules,.git}/**", 50);
       if (!found.length) return post({ type: "system", text: L(`No encontre archivos para \`${arg}\`.`, `No files found for \`${arg}\`.`) });
-      for (const u of found) state.chatFiles.add(relPathOf(u));
+      for (const u of found) addUserChatFile(relPathOf(u));
       sendFilesUpdate();
       return post({ type: "system", text: L(`Agregados: ${found.map(relPathOf).join(", ")}`, `Added: ${found.map(relPathOf).join(", ")}`) });
     }

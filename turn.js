@@ -20,7 +20,7 @@ const gitUtil = require("./git");
 const { state, rt, cfg, workspaceRoot, log, post } = require("./state");
 const { AUTO, missingApiKeyFor, autoTiers, callLLM, warnIfExpensive, nativeToolsFor } = require("./models");
 const { getRepoMap, repoMapParts, applyFocus, historyWindow } = require("./context");
-const { activeRelPath, validatePath, uriOf, readRel, exists, contextPaths, loadContextFiles, currentSelection, sendFilesUpdate, writeChangeSet, restoreFiles } = require("./workspaceFiles");
+const { activeRelPath, validatePath, uriOf, readRel, exists, contextPaths, loadContextFiles, currentSelection, sendFilesUpdate, writeChangeSet, restoreFiles, addAutoChatFile, touchAutoChatFiles, pruneIdleChatFiles } = require("./workspaceFiles");
 const { diagContext, appendUsageLog, logTurn } = require("./sessionLog");
 const { lspDiagnosticsFor } = require("./logAttach");
 const { runExecCommand } = require("./execRunner");
@@ -137,6 +137,17 @@ async function runTurnInner(question, opts = {}) {
 // ---------------------------------------------------------------- fase: arranque
 // Devuelve el estado del turno, o null si no se puede arrancar (ya avisado).
 async function startTurn(question, opts) {
+  // Archivos que agrego SovNode y ya no se usan: fuera del chat ANTES de
+  // cargar nada (tambien antes del ruteo de Auto, que mira cuantos hay).
+  // Dentro de una /task no: los pasos son un mismo trabajo.
+  if (!opts.taskId) {
+    const idle = cfg().get("chatFileIdleTurns");
+    const dropped = pruneIdleChatFiles([question, ...state.logs.map((l) => l.text)].join("\n"), state.turnCounter + 1);
+    if (dropped.length) {
+      post({ type: "info", turnId: null, text: L(`Se quitaron del chat ${dropped.map((p) => `\`${p}\``).join(", ")} (los agrego SovNode y no se usaron en ${idle} turnos). Siguen en el mapa del repo: el modelo los pide si los necesita, o agregalos con /add.`, `Removed from the chat: ${dropped.map((p) => `\`${p}\``).join(", ")} (added by SovNode and unused for ${idle} turns). They're still in the repo map: the model asks for them if needed, or add them with /add.`) });
+      sendFilesUpdate();
+    }
+  }
   // opts.model (v0.26): el modo agente fuerza el modelo de un paso (barato
   // primero, el principal al escalar). Con modelo forzado no hay arquitecto:
   // ese paso lo hace un solo modelo, que es justamente el punto.
@@ -479,7 +490,7 @@ async function askWithFiles(t, kind, extra, opts) {
     const added = [];
     for (const w of wanted) {
       if (!validatePath(w) && (await exists(w))) {
-        state.chatFiles.add(path.posix.normalize(w));
+        addAutoChatFile(path.posix.normalize(w), turnId);
         t.fullPaths.add(path.posix.normalize(w)); // si ya estaba como extracto, ahora va entero
         added.push(w);
       }
@@ -593,7 +604,8 @@ async function applyEdits(t) {
   // El objeto se sigue actualizando en el lugar (correcciones, commit).
   state.undoStack.push(snapshot);
   for (const f of plan.files) state.beforeStore.set(`${turnId}|${f.path}`, f.before || "");
-  for (const f of plan.files) if (f.created) state.chatFiles.add(f.path);
+  for (const f of plan.files) if (f.created) addAutoChatFile(f.path, turnId);
+  touchAutoChatFiles(plan.files.map((f) => f.path), turnId);
 
   if (cfg().get("verify")) await verifyAndFix(t, plan, snapshot);
   await commitChanges(t, plan, snapshot);
@@ -690,7 +702,7 @@ ${failText}`,
         // (o "creado", para que /undo lo borre).
         snapshot.files.push({ path: f.path, before: f.before, after: f.after, created: f.created });
         state.beforeStore.set(`${turnId}|${f.path}`, f.before || "");
-        if (f.created) state.chatFiles.add(f.path);
+        if (f.created) addAutoChatFile(f.path, turnId);
       }
     }
     t.finalText += `

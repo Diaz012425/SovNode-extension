@@ -109,6 +109,53 @@ function currentSelection() {
   return { start: ed.selection.start.line + 1, end: ed.selection.end.line + 1 };
 }
 
+// ---------------------------------------------------------------- archivos automaticos
+// Los archivos del chat van ENTEROS en cada llamada, en el mensaje final (la
+// parte que nunca se cachea). Los que agrega SovNode solo -- los que crea, o
+// los que el modelo pide con NECESITO_ARCHIVOS -- antes se quedaban para
+// siempre: veinte turnos despues de crear un proyecto se seguian pagando todos
+// en cada pedido aunque se hablara de uno solo. Ahora, si pasan
+// chatFileIdleTurns turnos sin que se editen, se nombren en el pedido o en un
+// log, ni esten abiertos en el editor, salen del chat: siguen en el mapa del
+// repo y el modelo los puede volver a pedir. Los que agrega el usuario (/add,
+// boton) quedan fijos hasta /drop.
+function addAutoChatFile(rel, turn) {
+  if (state.chatFiles.has(rel) && !state.autoChatFiles.has(rel)) return; // ya lo habia agregado el usuario: queda fijo
+  state.chatFiles.add(rel);
+  state.autoChatFiles.set(rel, turn);
+}
+
+function addUserChatFile(rel) {
+  state.chatFiles.add(rel);
+  state.autoChatFiles.delete(rel);
+}
+
+function touchAutoChatFiles(paths, turn) {
+  for (const p of paths) if (state.autoChatFiles.has(p)) state.autoChatFiles.set(p, turn);
+}
+
+// `text`: el pedido + logs adjuntos (nombrar un archivo lo mantiene).
+// Devuelve las rutas que se sacaron del chat.
+function pruneIdleChatFiles(text, turn) {
+  const idleTurns = Math.max(0, Math.floor(Number(cfg().get("chatFileIdleTurns")) || 0));
+  const mentioned = String(text || "").toLowerCase();
+  const active = activeRelPath();
+  const dropped = [];
+  for (const [p, last] of state.autoChatFiles) {
+    if (!state.chatFiles.has(p)) { state.autoChatFiles.delete(p); continue; } // /drop, /undo, borrado
+    if (p === active || mentioned.includes(p.toLowerCase()) || mentioned.includes(path.posix.basename(p).toLowerCase())) {
+      state.autoChatFiles.set(p, turn);
+      continue;
+    }
+    if (idleTurns && turn - last > idleTurns) {
+      state.chatFiles.delete(p);
+      state.autoChatFiles.delete(p);
+      dropped.push(p);
+    }
+  }
+  return dropped;
+}
+
 function sendFilesUpdate() {
   post({ type: "files", files: contextPaths() });
 }
@@ -163,5 +210,6 @@ async function restoreFiles(snapshot) {
 module.exports = {
   activeEditor, relPathOf, activeRelPath, validatePath, uriOf, readRel, exists,
   contextPaths, loadContextFiles, currentSelection, sendFilesUpdate,
+  addAutoChatFile, addUserChatFile, touchAutoChatFiles, pruneIdleChatFiles,
   writeChangeSet, currentText, restoreFiles,
 };

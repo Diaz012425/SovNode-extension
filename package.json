@@ -175,6 +175,12 @@
           "default": 8,
           "description": "%config.maxHistoryTurns.description%"
         },
+        "sovnodeAider.chatFileIdleTurns": {
+          "type": "number",
+          "default": 5,
+          "minimum": 0,
+          "description": "%config.chatFileIdleTurns.description%"
+        },
         "sovnodeAider.focusLargeFiles": {
           "type": "number",
           "default": 400,

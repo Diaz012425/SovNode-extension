@@ -10,6 +10,7 @@ const vscode = require("vscode");
 const state = {
   history: [], // [{role, content}]
   chatFiles: new Set(), // rutas relativas agregadas con /add o por NECESITO_ARCHIVOS
+  autoChatFiles: new Map(), // de chatFiles, las que agrego SovNode solo (no el usuario) -> ultimo turno en que se usaron (ver pruneIdleChatFiles)
   archBases: new Map(), // ruta -> contenido "base" que ya vio el arquitecto (archBase.js)
   trustedExecCmds: new Set(), // comandos exactos que el usuario aprobo "para toda la sesion" (ver runExecCommand)
   lastTurnFailed: false, // senal para el modo Auto (v0.27)
