@@ -55,10 +55,24 @@ directly on your project:
 
 ## Getting started
 
-1. Install **SovNode** from the VS Code Marketplace <!-- TODO: link -->.
-2. Open the SovNode icon (◆) in the Activity Bar.
-3. Set an API key for at least one provider (🔑 button, or *SovNode: Set API Key*).
-4. Type what you want built or changed — SovNode reads your active file and project
+Not on the Marketplace yet, but installing from source is quick:
+
+1. **Download this repo** as a ZIP (green "Code" button → "Download ZIP") and unzip
+   it, or `git clone` it.
+2. Open a terminal inside the unzipped folder and run:
+   ```
+   npm install
+   npm install -g @vscode/vsce
+   vsce package
+   ```
+   This creates a `.vsix` file (e.g. `sovnode-vsextension-0.29.4.vsix`) in the same
+   folder.
+3. Install it in VS Code: Extensions panel (Ctrl+Shift+X) → "..." menu (top right)
+   → **Install from VSIX...** → pick the file you just created. (Or from a
+   terminal: `code --install-extension sovnode-vsextension-0.29.4.vsix`.)
+4. Open the SovNode icon (◆) in the Activity Bar.
+5. Set an API key for at least one provider (🔑 button, or *SovNode: Set API Key*).
+6. Type what you want built or changed — SovNode reads your active file and project
    context automatically.
 
 No account, no server: your API keys are stored locally and every request goes
@@ -85,3 +99,4 @@ See the full list of settings and their descriptions directly in VS Code
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
