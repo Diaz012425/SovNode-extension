@@ -209,6 +209,7 @@ async function startTurn(question, opts) {
     // los completa prepareContext
     map: null, mapParts: null, history: [], files: [], fullPaths: new Set(), selection: null,
     toolRoundsLeft: 0, toolsOn: false, execEnabled: false, toolCtx: null,
+    writerOpts: null, // opciones de la llamada que escribio el codigo (ver askFix)
   };
   post({ type: "turnStart", turnId, model: architect ? `${model} → ${editModel}` : model, effort, architect });
   return t;
@@ -483,6 +484,7 @@ async function askWithFiles(t, kind, extra, opts) {
   t.contextInfo[useBase ? "archFiles" : "files"] = describeFiles(sent);
   post({ type: "context", turnId, context: t.contextInfo });
   let contents = contentsFor(sent);
+  t.writerOpts = opts; // la ultima llamada que respondio: reparacion y verificacion copian su prefijo (askFix)
   let r = await toolLoop(t, await callModel(t, kind, contents, opts), contents, opts, sent);
   for (let round = 0; round < MAX_FILE_REQUEST_ROUNDS; round++) {
     const wanted = parseFileRequest(r.text, t.editFormat);
@@ -530,6 +532,34 @@ async function askModel(t) {
   }, { model: t.editModel });
 }
 
+// ---------------------------------------------------------------- llamadas de arreglo
+// Reparacion (bloques que no calzan) y correccion por verificacion: el modelo
+// que escribio el codigo recibe su propia respuesta + el error y manda bloques
+// nuevos. Van con el MISMO prefijo que la llamada que escribio: mismas
+// herramientas y prompt de sistema, y los mismos pares de memoria del
+// proyecto / mapa / historial al principio -- asi el proveedor cobra ese
+// prefijo como cache (0.1x) en vez de a precio completo. Antes iban sin
+// herramientas (otro prompt de sistema) y sin memoria ni mapa: el prefijo
+// cambiaba desde el primer byte y no se cacheaba nada, justo en los turnos
+// que ya venian fallando. Si el modelo pide herramientas y quedan rondas del
+// turno, se atienden como en cualquier otra llamada.
+async function askFix(t, kind, { question, files, note }) {
+  const opts = { ...(t.writerOpts || {}), model: t.editModel };
+  delete opts.systemPrompt; // el prompt del arquitecto nunca: esto escribe codigo
+  const mapParts = t.mapParts || { cached: "", memory: "" };
+  const contents = buildContents({
+    replyLang: t.replyLang,
+    question,
+    files,
+    history: [...t.history, { role: "user", content: t.question }, { role: "assistant", content: t.finalText }],
+    repoMapText: "",
+    repoMapCached: mapParts.cached,
+    projectMemory: mapParts.memory,
+    extraNote: note,
+  });
+  return toolLoop(t, await callModel(t, kind, contents, opts), contents, opts, files);
+}
+
 // ---------------------------------------------------------------- fase: aplicar
 // Aplicar bloques (multi-archivo, todo-o-nada), con 1 ronda de reparacion.
 async function applyEdits(t) {
@@ -546,16 +576,13 @@ async function applyEdits(t) {
       if (c !== null) current.push({ path: p, content: c, active: false });
     }
     const failureText = plan.failures.map((f) => describeFailure(f, editFormat)).join("\n");
-    const repairHistory = [...t.history, { role: "user", content: t.question }, { role: "assistant", content: t.finalText }];
     post({ type: "resetStream", turnId });
     t.phase = "llamada al modelo (reparacion)";
-    const rr = await callModel(t, "reparacion", buildContents({
+    const rr = await askFix(t, "reparacion", {
       question: repairInstruction(editFormat),
       files: current.length ? current : t.files,
-      history: repairHistory,
-      repoMapText: "",
-      extraNote: `Fallos:\n${failureText}`,
-    }), { model: t.editModel });
+      note: `Fallos:\n${failureText}`,
+    });
     if (!hasEdits(rr.text, editFormat)) break;
     t.finalText = rr.text;
     edits = parseEdits(t.finalText, editFormat, defaultPath);
@@ -674,17 +701,14 @@ async function verifyAndFix(t, plan, snapshot) {
     const filesForFix = vres.failures.length
       ? currentFiles.filter((f) => vres.failures.some((x) => x.path === f.path)).map((f) => ({ path: f.path, content: f.after, active: false }))
       : currentFiles.map((f) => ({ path: f.path, content: f.after, active: false }));
-    const fixHistory = [...t.history, { role: "user", content: t.question }, { role: "assistant", content: t.finalText }];
     post({ type: "resetStream", turnId });
     t.phase = "llamada al modelo (correccion por verificacion)";
-    const fr = await callModel(t, "verificacion", buildContents({
+    const fr = await askFix(t, "verificacion", {
       question: verifyFixInstruction(editFormat),
       files: filesForFix,
-      history: fixHistory,
-      repoMapText: "",
-      extraNote: `Error de verificacion:
+      note: `Error de verificacion:
 ${failText}`,
-    }), { model: t.editModel });
+    });
     if (!hasEdits(fr.text, editFormat)) { t.notes.push(L("La correccion automatica no trajo cambios de codigo; se deja como esta.", "The automatic fix brought no code changes; leaving it as is.")); return; }
     const fixEdits = parseEdits(fr.text, editFormat, activeRelPath());
     const fixPlan = await planChangeSet(fixEdits, readRel, validatePath);
