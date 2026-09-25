@@ -1,0 +1,10 @@
+node_modules/
+*.vsix
+*.log
+usage.jsonl
+.vscode-test/
+out/
+dist/
+.env
+*.pem
+*.key

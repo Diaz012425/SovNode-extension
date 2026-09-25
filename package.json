@@ -1,0 +1,324 @@
+{
+  "name": "sovnode-aider",
+  "displayName": "%extension.displayName%",
+  "description": "%extension.description%",
+  "version": "0.29.4",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "sovnodeAider",
+          "title": "%viewsContainer.sovnodeAider.title%",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "sovnodeAider": [
+        {
+          "type": "webview",
+          "id": "sovnodeAider.chatView",
+          "name": "%view.chatView.name%"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "sovnodeAider.openChat",
+        "title": "%command.openChat.title%",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "sovnodeAider.setApiKey",
+        "title": "%command.setApiKey.title%"
+      },
+      {
+        "command": "sovnodeAider.undo",
+        "title": "%command.undo.title%"
+      },
+      {
+        "command": "sovnodeAider.addActiveFile",
+        "title": "%command.addActiveFile.title%"
+      },
+      {
+        "command": "sovnodeAider.showUsageLog",
+        "title": "%command.showUsageLog.title%"
+      },
+      {
+        "command": "sovnodeAider.showSessionLog",
+        "title": "%command.showSessionLog.title%"
+      },
+      {
+        "command": "sovnodeAider.toggleArchitect",
+        "title": "%command.toggleArchitect.title%"
+      },
+      {
+        "command": "sovnodeAider.diagnose",
+        "title": "%command.diagnose.title%"
+      },
+      {
+        "command": "sovnodeAider.attachLog",
+        "title": "%command.attachLog.title%",
+        "icon": "$(bug)"
+      },
+      {
+        "command": "sovnodeAider.attachTerminalSelection",
+        "title": "%command.attachTerminalSelection.title%",
+        "icon": "$(bug)"
+      },
+      {
+        "command": "sovnodeAider.editProjectMemory",
+        "title": "%command.editProjectMemory.title%"
+      },
+      {
+        "command": "sovnodeAider.toggleAgent",
+        "title": "%command.toggleAgent.title%"
+      }
+    ],
+    "configuration": {
+      "title": "%config.title%",
+      "properties": {
+        "sovnodeAider.model": {
+          "type": "string",
+          "default": "gemini-3.6-flash",
+          "description": "%config.model.description%"
+        },
+        "sovnodeAider.effort": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "extra"
+          ],
+          "default": "medium",
+          "description": "%config.effort.description%"
+        },
+        "sovnodeAider.streaming": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.streaming.description%"
+        },
+        "sovnodeAider.autoCommit": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.autoCommit.description%"
+        },
+        "sovnodeAider.architect": {
+          "type": "boolean",
+          "default": false,
+          "description": "%config.architect.description%"
+        },
+        "sovnodeAider.editorModel": {
+          "type": "string",
+          "default": "",
+          "description": "%config.editorModel.description%"
+        },
+        "sovnodeAider.editFormat": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "search-replace",
+            "udiff",
+            "whole"
+          ],
+          "enumDescriptions": [
+            "%config.editFormat.enumDescriptions.auto%",
+            "%config.editFormat.enumDescriptions.search-replace%",
+            "%config.editFormat.enumDescriptions.udiff%",
+            "%config.editFormat.enumDescriptions.whole%"
+          ],
+          "default": "auto",
+          "description": "%config.editFormat.description%"
+        },
+        "sovnodeAider.maxAutoSteps": {
+          "type": "number",
+          "default": 6,
+          "description": "%config.maxAutoSteps.description%"
+        },
+        "sovnodeAider.verify": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.verify.description%"
+        },
+        "sovnodeAider.verifyCommand": {
+          "type": "string",
+          "default": "",
+          "description": "%config.verifyCommand.description%"
+        },
+        "sovnodeAider.verifyTimeoutMs": {
+          "type": "number",
+          "default": 60000,
+          "description": "%config.verifyTimeoutMs.description%"
+        },
+        "sovnodeAider.includeActiveFile": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.includeActiveFile.description%"
+        },
+        "sovnodeAider.openChangedFiles": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.openChangedFiles.description%"
+        },
+        "sovnodeAider.maxHistoryTurns": {
+          "type": "number",
+          "default": 8,
+          "description": "%config.maxHistoryTurns.description%"
+        },
+        "sovnodeAider.focusLargeFiles": {
+          "type": "number",
+          "default": 400,
+          "minimum": 0,
+          "description": "%config.focusLargeFiles.description%"
+        },
+        "sovnodeAider.repoMapCache": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.repoMapCache.description%"
+        },
+        "sovnodeAider.architectBaseCache": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.architectBaseCache.description%"
+        },
+        "sovnodeAider.toolsMaxRounds": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": null,
+          "minimum": 0,
+          "description": "%config.toolsMaxRounds.description%"
+        },
+        "sovnodeAider.execEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.execEnabled.description%"
+        },
+        "sovnodeAider.execTimeoutMs": {
+          "type": "number",
+          "default": 20000,
+          "minimum": 1000,
+          "maximum": 120000,
+          "description": "%config.execTimeoutMs.description%"
+        },
+        "sovnodeAider.execAllowlist": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "%config.execAllowlist.description%"
+        },
+        "sovnodeAider.sessionLogKeep": {
+          "type": "number",
+          "default": 20,
+          "minimum": 0,
+          "description": "%config.sessionLogKeep.description%"
+        },
+        "sovnodeAider.extendedThinking": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.extendedThinking.description%"
+        },
+        "sovnodeAider.pricing": {
+          "type": "object",
+          "default": {},
+          "description": "%config.pricing.description%"
+        },
+        "sovnodeAider.projectMemory": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.projectMemory.description%"
+        },
+        "sovnodeAider.agentMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "%config.agentMode.description%"
+        },
+        "sovnodeAider.taskBudgetUSD": {
+          "type": "number",
+          "default": 0.5,
+          "minimum": 0,
+          "description": "%config.taskBudgetUSD.description%"
+        },
+        "sovnodeAider.nativeTools": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.nativeTools.description%"
+        },
+        "sovnodeAider.agentStepModel": {
+          "type": "string",
+          "default": "",
+          "description": "%config.agentStepModel.description%"
+        },
+        "sovnodeAider.autoModels": {
+          "type": "object",
+          "default": {},
+          "properties": {
+            "barato": {
+              "type": "string"
+            },
+            "medio": {
+              "type": "string"
+            },
+            "fuerte": {
+              "type": "string"
+            }
+          },
+          "description": "%config.autoModels.description%"
+        },
+        "sovnodeAider.language": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "es",
+            "en"
+          ],
+          "default": "auto",
+          "description": "%config.language.description%"
+        },
+        "sovnodeAider.autoEscalate": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.autoEscalate.description%"
+        }
+      }
+    },
+    "menus": {
+      "editor/title": [
+        {
+          "command": "sovnodeAider.openChat",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "sovnodeAider.attachLog",
+          "when": "editorHasSelection",
+          "group": "sovnode@1"
+        }
+      ],
+      "terminal/context": [
+        {
+          "command": "sovnodeAider.attachTerminalSelection",
+          "group": "sovnode@1"
+        }
+      ]
+    }
+  },
+  "dependencies": {
+    "web-tree-sitter": "^0.25.10",
+    "tree-sitter-wasms": "^0.1.13"
+  }
+}

@@ -1,0 +1,184 @@
+/* UI del chat de SovNode. Solo variables del tema de VS Code: se ve bien en
+   temas claros, oscuros y de alto contraste sin colores propios fijos. */
+:root {
+  --accent: var(--vscode-textLink-foreground);
+  --muted: var(--vscode-descriptionForeground);
+  --border: var(--vscode-panel-border, rgba(128,128,128,.25));
+  --card: var(--vscode-editorWidget-background, rgba(128,128,128,.08));
+  --code-bg: var(--vscode-textCodeBlock-background, rgba(128,128,128,.12));
+  --add: var(--vscode-gitDecoration-addedResourceForeground, #3fb950);
+  --del: var(--vscode-gitDecoration-deletedResourceForeground, #f85149);
+  --warn: var(--vscode-editorWarning-foreground, #d29922);
+  --err: var(--vscode-errorForeground, #f85149);
+  --btn: var(--vscode-button-background);
+  --btn-fg: var(--vscode-button-foreground);
+  --mono: var(--vscode-editor-font-family, monospace);
+  --radius: 6px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; padding: 0; font-family: var(--vscode-font-family); font-size: var(--vscode-font-size); color: var(--vscode-foreground); background: var(--vscode-sideBar-background); display: flex; flex-direction: column; height: 100vh; overflow: hidden; position: relative; }
+button { font-family: inherit; cursor: pointer; }
+button:focus-visible, select:focus-visible, textarea:focus-visible, input:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: 1px; }
+[hidden] { display: none !important; }
+.muted { color: var(--muted); }
+
+/* ---------------------------------------------------------------- header */
+header#top { border-bottom: 1px solid var(--border); padding: 6px 8px 4px; display: flex; flex-direction: column; gap: 5px; }
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.bar.selects { justify-content: flex-start; }
+.brand { font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.logo { color: var(--accent); }
+.status { width: 7px; height: 7px; border-radius: 50%; background: var(--add); opacity: .7; }
+.status.busy { background: var(--accent); opacity: 1; animation: pulse 1s ease-in-out infinite; }
+.actions { display: flex; gap: 2px; }
+.field { display: flex; align-items: center; gap: 4px; min-width: 0; font-size: 11px; color: var(--muted); }
+.field.grow { flex: 1; }
+.field select { flex: 1; min-width: 0; }
+select { background: var(--vscode-dropdown-background); color: var(--vscode-dropdown-foreground); border: 1px solid var(--vscode-dropdown-border, var(--border)); border-radius: 4px; padding: 2px 4px; font-size: 11px; max-width: 100%; }
+button.icon { background: transparent; color: var(--vscode-foreground); border: 1px solid transparent; border-radius: 4px; width: 26px; height: 24px; padding: 0; font-size: 13px; line-height: 1; }
+button.icon:hover { background: var(--vscode-toolbar-hoverBackground); }
+button.icon.warn { color: var(--warn); border-color: var(--warn); }
+button.icon.on { background: var(--btn); color: var(--btn-fg); }
+#session { font-size: 11px; color: var(--muted); padding: 3px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#session:empty { display: none; }
+
+/* ---------------------------------------------------------------- mensajes */
+main#messages { flex: 1; overflow-y: auto; padding: 12px 10px 6px; scroll-behavior: auto; }
+.empty { text-align: center; color: var(--muted); margin-top: 8vh; padding: 0 12px; }
+.empty .big { font-size: 34px; }
+.empty h2 { color: var(--vscode-foreground); margin: 4px 0 8px; font-weight: 600; }
+.empty .hint { font-size: 12px; }
+.examples { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+.ex { background: var(--card); color: var(--vscode-foreground); border: 1px solid var(--border); border-radius: var(--radius); padding: 7px 10px; text-align: left; }
+.ex:hover { border-color: var(--accent); }
+
+.msg { margin-bottom: 16px; line-height: 1.5; word-break: break-word; }
+.msg.user { margin-left: 18px; background: color-mix(in srgb, var(--btn) 14%, var(--vscode-input-background)); border: 1px solid color-mix(in srgb, var(--btn) 35%, var(--border)); border-radius: 10px 10px 2px 10px; padding: 7px 10px; white-space: pre-wrap; }
+.msg.user .logs-used { display: block; margin-top: 4px; font-size: 11px; color: var(--muted); white-space: normal; }
+.msg.system { font-size: 12px; color: var(--muted); border-left: 2px solid var(--border); padding: 1px 0 1px 8px; }
+.msg.system code { font-family: var(--mono); }
+.msg.assistant { padding-left: 2px; }
+.role { font-size: 11px; font-weight: 600; color: var(--vscode-foreground); margin-bottom: 4px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.role .av { color: var(--accent); }
+.role .tag { font-weight: 400; color: var(--muted); }
+.archplan { border-left: 2px solid var(--btn); }
+
+.msg.error { border: 1px solid color-mix(in srgb, var(--err) 45%, transparent); background: color-mix(in srgb, var(--err) 8%, transparent); border-radius: var(--radius); padding: 7px 10px; }
+.msg.error .etitle { color: var(--err); font-weight: 600; white-space: pre-wrap; }
+.msg.error details { margin-top: 6px; font-size: 11px; color: var(--muted); }
+.msg.error details summary { cursor: pointer; }
+.msg.error pre { white-space: pre-wrap; font-family: var(--mono); background: var(--code-bg); padding: 6px; border-radius: 4px; max-height: 240px; overflow-y: auto; }
+.row-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+
+/* markdown */
+.md p { margin: 0 0 8px; }
+.md ul, .md ol { margin: 0 0 8px; padding-left: 20px; }
+.md li { margin: 2px 0; }
+.md h4 { margin: 12px 0 6px; font-size: 1em; }
+.md a { color: var(--accent); }
+.md code { font-family: var(--mono); font-size: .92em; background: var(--code-bg); padding: 1px 4px; border-radius: 3px; }
+.md hr { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
+.codeblock { position: relative; margin: 0 0 8px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.codeblock .cb-head { display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; color: var(--muted); padding: 2px 4px 2px 8px; background: var(--card); border-bottom: 1px solid var(--border); }
+.codeblock pre { margin: 0; padding: 8px; overflow-x: auto; background: var(--code-bg); }
+.codeblock pre code { background: none; padding: 0; font-family: var(--mono); font-size: 12px; }
+
+/* turno en curso */
+.ctx { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.ctx .pill { font-size: 10.5px; color: var(--muted); border: 1px solid var(--border); border-radius: 10px; padding: 0 7px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctx .pill.focus { color: var(--accent, var(--vscode-textLink-foreground)); border-color: color-mix(in srgb, var(--vscode-textLink-foreground) 50%, transparent); }
+.ctx .pill.log { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 50%, transparent); }
+.thoughts { font-size: 12px; color: var(--muted); border-left: 2px solid var(--accent); padding: 2px 8px; margin-bottom: 8px; }
+.thoughts summary { cursor: pointer; user-select: none; }
+.thoughts .body { white-space: pre-wrap; max-height: 180px; overflow-y: auto; margin-top: 4px; }
+.phase { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.phase .elapsed { margin-left: auto; font-family: var(--mono); font-size: 10.5px; opacity: .8; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: pulse 1s ease-in-out infinite; flex-shrink: 0; }
+@keyframes pulse { 0%,100% { opacity: .25; transform: scale(.8); } 50% { opacity: 1; transform: scale(1); } }
+.live { font-family: var(--mono); font-size: 11.5px; white-space: pre-wrap; max-height: 220px; overflow-y: auto; opacity: .8; background: var(--card); border-radius: var(--radius); padding: 6px 8px; }
+.live:empty { display: none; }
+
+/* tarjetas de cambios */
+.changes { margin: 8px 0; display: flex; flex-direction: column; gap: 6px; }
+.fcard { border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); overflow: hidden; }
+.fhead { display: flex; align-items: center; gap: 6px; padding: 5px 8px; font-size: 12px; }
+.badge { font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 3px; text-transform: uppercase; flex-shrink: 0; }
+.badge.create { background: var(--add); color: var(--vscode-editor-background); }
+.badge.edit { background: var(--accent); color: var(--vscode-editor-background); }
+.badge.fail { background: var(--del); color: var(--vscode-editor-background); }
+.fpath { font-family: var(--mono); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.fpath:hover { text-decoration: underline; }
+.stat { font-family: var(--mono); font-size: 11px; flex-shrink: 0; }
+.stat .a { color: var(--add); } .stat .d { color: var(--del); }
+.fbtn { background: transparent; border: 1px solid var(--border); color: var(--vscode-foreground); border-radius: 4px; font-size: 11px; padding: 1px 7px; flex-shrink: 0; }
+.fbtn:hover { border-color: var(--accent); }
+.hunks { border-top: 1px solid var(--border); }
+.hunk { font-size: 11.5px; padding: 4px 8px; color: var(--muted); }
+.hunk summary { cursor: pointer; }
+.hunk:hover { color: var(--vscode-foreground); }
+.hunk pre { margin: 4px 0 2px; font-family: var(--mono); font-size: 11px; white-space: pre-wrap; max-height: 200px; overflow-y: auto; }
+.hunk .minus { color: var(--del); } .hunk .plus { color: var(--add); }
+.failure { font-size: 12px; padding: 4px 8px; border-top: 1px solid var(--border); }
+.failure pre { white-space: pre-wrap; font-family: var(--mono); font-size: 11px; max-height: 200px; overflow-y: auto; margin: 4px 0 0; }
+.notes { font-size: 12px; color: var(--warn); margin: 4px 0; }
+.notes.ok { color: var(--add); }
+.notes.info { color: var(--muted); }
+
+/* costo */
+details.cost { font-size: 11px; color: var(--muted); border-top: 1px dashed var(--border); margin-top: 8px; padding-top: 4px; }
+details.cost summary { cursor: pointer; user-select: none; list-style: none; display: flex; gap: 8px; flex-wrap: wrap; }
+details.cost summary::-webkit-details-marker { display: none; }
+details.cost summary b { color: var(--vscode-foreground); }
+.costgrid { display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; margin-top: 4px; }
+.costgrid .k { opacity: .85; } .costgrid .v { font-family: var(--mono); }
+.calls { margin-top: 4px; }
+.calls div { font-family: var(--mono); }
+
+/* tareas */
+.task { margin: 8px 0 14px; padding: 8px 10px; border: 1px solid var(--border); border-left: 3px solid var(--btn); border-radius: 4px; background: var(--card); }
+.task-head { font-size: 12px; margin-bottom: 4px; }
+.task-status { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.task-steps { list-style: none; margin: 0; padding: 0; font-size: 12px; }
+.task-steps li { padding: 2px 0; opacity: 0.7; }
+.task-steps li .mark { display: inline-block; width: 16px; color: var(--muted); }
+.task-steps li.active { opacity: 1; font-weight: 600; }
+.task-steps li.active .mark { color: var(--btn); }
+.task-steps li.done { opacity: 0.6; text-decoration: line-through; }
+.task.task-stopped { border-left-color: var(--warn); }
+
+.tobottom { position: absolute; right: 14px; bottom: 120px; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border); background: var(--vscode-editorWidget-background, var(--card)); color: var(--vscode-foreground); box-shadow: 0 2px 6px rgba(0,0,0,.25); z-index: 5; }
+.tobottom:hover { border-color: var(--accent); }
+
+/* ---------------------------------------------------------------- footer */
+footer { border-top: 1px solid var(--border); padding: 6px 8px 8px; }
+#chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 5px; }
+#chips:empty { display: none; }
+.chip { font-size: 11px; background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); border-radius: 10px; padding: 1px 4px 1px 8px; display: flex; align-items: center; gap: 3px; max-width: 100%; }
+.chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip.active { opacity: .8; font-style: italic; padding-right: 8px; }
+.chip button { background: none; border: none; color: inherit; padding: 0 2px; font-size: 11px; }
+.chip.add { background: transparent; border: 1px dashed var(--border); color: var(--muted); cursor: pointer; padding-right: 8px; }
+.chip.log { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--vscode-foreground); border: 1px solid color-mix(in srgb, var(--warn) 55%, transparent); }
+.chip.log span { cursor: pointer; }
+.composer { background: var(--vscode-input-background); border: 1px solid var(--vscode-input-border, var(--border)); border-radius: 8px; padding: 6px 6px 4px 8px; }
+.composer:focus-within { border-color: var(--vscode-focusBorder); }
+#q { width: 100%; background: transparent; color: var(--vscode-input-foreground); border: none; outline: none; resize: none; font-family: inherit; font-size: inherit; line-height: 1.45; max-height: 200px; overflow-y: hidden; padding: 2px 0; display: block; }
+.composer-bar { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+.composer-bar .hint { flex: 1; font-size: 10.5px; color: var(--muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+#send, #stop { background: var(--btn); color: var(--btn-fg); border: none; border-radius: 6px; width: 30px; height: 26px; flex-shrink: 0; }
+#send:hover { background: var(--vscode-button-hoverBackground); }
+#send:disabled { opacity: .45; cursor: default; }
+#stop { background: var(--del); }
+
+.logpanel { border: 1px solid color-mix(in srgb, var(--warn) 55%, var(--border)); border-radius: 8px; padding: 8px; margin-bottom: 6px; background: var(--card); display: flex; flex-direction: column; gap: 6px; }
+.lp-head { display: flex; flex-direction: column; gap: 1px; font-size: 12px; }
+.lp-head .muted { font-size: 11px; }
+.logpanel textarea, .logpanel input { width: 100%; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border, var(--border)); border-radius: 4px; padding: 5px 6px; font-size: 12px; }
+.logpanel textarea { font-family: var(--mono); resize: vertical; min-height: 80px; max-height: 40vh; }
+.lp-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.btn { background: var(--vscode-button-secondaryBackground, transparent); color: var(--vscode-button-secondaryForeground, var(--vscode-foreground)); border: 1px solid var(--border); border-radius: 4px; padding: 3px 9px; font-size: 12px; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--btn); color: var(--btn-fg); border-color: transparent; }
+.btn.ghost { background: transparent; }
+
+@media (prefers-reduced-motion: reduce) { .dot, .status.busy { animation: none; } }
