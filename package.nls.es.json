@@ -1,5 +1,5 @@
 {
-  "extension.displayName": "SovNode (tipo Aider)",
+  "extension.displayName": "SovNode-vsextension",
   "extension.description": "Chat con Gemini, OpenAI o Anthropic dentro de VS Code: edita y crea archivos con bloques SEARCH/REPLACE, repo map, multi-archivo, git auto-commit, /undo y costo detallado por turno.",
   "viewsContainer.sovnodeAider.title": "SovNode",
   "view.chatView.name": "Chat",
