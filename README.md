@@ -80,7 +80,7 @@ straight from your machine to the provider you chose.
 
 ## Configuration
 
-The most commonly used settings (`sovnodeAider.*` in VS Code settings):
+The most commonly used settings (`sovnode.*` in VS Code settings):
 
 | Setting | Purpose |
 |---|---|
